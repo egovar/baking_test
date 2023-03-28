@@ -4,6 +4,7 @@
     :items="blocks"
     :loading="loading"
     :options.sync="options"
+    :disable-sort="loading"
     :server-items-length="total"
     hide-default-footer
     fixed-header

@@ -1,3 +1,5 @@
+import { getSortObject } from "./utils";
+
 export const [LEVEL, TIMESTAMP, HASH, PROPOSER, REWARD, FEES] = [
   "level",
   "timestamp",
@@ -18,9 +20,7 @@ export const DEFAULT_PARAMS = {
   limit: DEFAULT_LIMIT,
   offset: DEFAULT_OFFSET,
 };
-export const DEFAULT_SORT_OBJECT = {
-  [SORT_FIELDS[DEFAULT_SORT_DESC ? "desc" : "asc"]]: DEFAULT_SORT,
-};
+export const DEFAULT_SORT_OBJECT = getSortObject();
 export const BAKING_TIME = 8;
 const SORTABLE_COLUMN_NAMES = [LEVEL, REWARD, FEES];
 // const PSEUDO_SORTABLE_COLUMN_NAMES = [TIMESTAMP];
