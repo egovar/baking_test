@@ -15,8 +15,15 @@
 <script setup>
 import { computed, ref } from "vue";
 
+import { socket } from "@/api";
 import { getBlocks } from "./api";
-import { COLUMNS, DEFAULT_SORT_DESC, LEVEL } from "./constants";
+import {
+  COLUMNS,
+  DEFAULT_SORT_DESC,
+  LEVEL,
+  SUBSCRIBE_TO_BLOCKS,
+  BLOCKS_EVENT,
+} from "./constants";
 import { getSortObject } from "./utils";
 
 // getting initial table data, "created"
@@ -26,6 +33,12 @@ const total = 1; // readonly: with -1 sorts offline, with 0 shows no data
 getBlocks()
   .then((data) => (blocks.value = data))
   .finally(() => (loading.value = false));
+
+// subscribing to socket, setting blocks refresh
+socket.init().then(() => {
+  socket.send(SUBSCRIBE_TO_BLOCKS);
+  socket.on(BLOCKS_EVENT, (msg) => console.log(msg));
+});
 
 // setting sorting logic
 const sortBy = ref(LEVEL);

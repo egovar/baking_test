@@ -23,9 +23,10 @@ export const DEFAULT_PARAMS = {
 export const DEFAULT_SORT_OBJECT = getSortObject();
 export const BAKING_TIME = 8;
 const SORTABLE_COLUMN_NAMES = [LEVEL, REWARD, FEES];
-// const PSEUDO_SORTABLE_COLUMN_NAMES = [TIMESTAMP];
 export const COLUMNS = COLUMN_NAMES.map((name) => ({
   text: name[0].toUpperCase() + name.slice(1),
   value: name,
   sortable: SORTABLE_COLUMN_NAMES.includes(name),
 }));
+export const SUBSCRIBE_TO_BLOCKS = "SubscribeToBlocks";
+export const BLOCKS_EVENT = "blocks";
