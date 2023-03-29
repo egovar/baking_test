@@ -1,38 +1,18 @@
 <template>
-  <v-data-table
-    :headers="COLUMNS"
-    :items="blocks"
-    :loading="loading"
-    :options.sync="options"
-    :disable-sort="loading"
-    :server-items-length="total"
-    hide-default-footer
-    fixed-header
-    height="calc(100vh - 4rem)"
-    :item-key="LEVEL"
-    ref="table"
-  >
-    <template #[`item.${LEVEL}`]="{ item }">
-      <a :href="`${ROOT_LINK}${item[LEVEL]}`">{{ item[LEVEL] }}</a>
-    </template>
-    <template #[`item.${HASH}`]="{ item }">
-      <a :href="`${ROOT_LINK}${item[HASH]}`">{{ formatHash(item[HASH]) }}</a>
-    </template>
-    <template #[`item.${PROPOSER}`]="{ item }">
-      <v-avatar class="mr-3">
-        <v-img :src="`${AVATAR_ROOT_LINK}${item[PROPOSER].address}`" />
-      </v-avatar>
-      <a :href="`${ROOT_LINK}${item[PROPOSER].address}`">
-        {{ formatProposer(item[PROPOSER].address) }}
-      </a>
-    </template>
-    <template #[`item.${REWARD}`]="{ item }">
-      {{ item[REWARD] / MICRO_DIVIDER }} ꜩ
-    </template>
-    <template #[`item.${FEES}`]="{ item }">
-      {{ item[FEES] / MICRO_DIVIDER }} ꜩ
-    </template>
-  </v-data-table>
+  <v-row>
+    <v-container>
+      <BasicBlocksTable
+        :items="blocks"
+        :loading="loading"
+        :options="options"
+        :disable-sort="loading"
+        :server-items-length="total"
+        height="calc(100vh - 4rem)"
+        ref="table"
+        @update:options="options = $event"
+      />
+    </v-container>
+  </v-row>
 </template>
 
 <script setup>
@@ -41,7 +21,6 @@ import { computed, onMounted, ref } from "vue";
 import { socket } from "@/api";
 import { getBlocks } from "./api";
 import {
-  COLUMNS,
   DEFAULT_SORT_DESC,
   SUBSCRIBE_TO_BLOCKS,
   BLOCKS_EVENT,
@@ -50,21 +29,9 @@ import {
   SCROLL_THRESHOLD,
   DEFAULT_OFFSET,
   SEARCH_IN_OLD_BLOCKS_COUNT,
-  LEVEL,
-  HASH,
-  REWARD,
-  FEES,
-  ROOT_LINK,
-  MICRO_DIVIDER,
-  PROPOSER,
-  AVATAR_ROOT_LINK,
 } from "./constants";
-import {
-  getSortObject,
-  isHigherInTable,
-  formatHash,
-  formatProposer,
-} from "./utils";
+import { getSortObject, isHigherInTable } from "./utils";
+import BasicBlocksTable from "@/components/BlocksTable/components/BasicBlocksTable";
 
 // getting initial table data, "created"
 const loading = ref(true);
@@ -95,25 +62,8 @@ socket.init().then(() => {
 });
 
 function newBlockHandler({ type, state, data }) {
-  function newBlockDefaultHandler(data) {
-    const _newBlocks = [];
-    data.forEach(({ level, timestamp, hash, proposer, reward, fees }) => {
-      _newBlocks.push({
-        level,
-        timestamp,
-        hash,
-        proposer,
-        reward,
-        fees,
-        new: true,
-      });
-      additionalOffset.value++;
-    });
-    // newBlocks.value.reverse(); // depends on order, got only one in time
-    blocks.value = [..._newBlocks, ...blocks.value];
-  }
-
-  function newBlockSortedHandler(data) {
+  if (type === 0) topRemoteBlockLevel.value = state;
+  else if (type === 1 && data && Array.isArray(data)) {
     data.forEach(({ level, timestamp, hash, proposer, reward, fees }) => {
       let isHigherInMainTable = false;
       if (
@@ -138,15 +88,6 @@ function newBlockHandler({ type, state, data }) {
         isHigherInMainTable,
       });
     });
-  }
-
-  if (type === 0) topRemoteBlockLevel.value = state;
-  else if (type === 1 && data && Array.isArray(data)) {
-    if (sortBy.value === DEFAULT_SORT && sortDesc.value === DEFAULT_SORT_DESC) {
-      newBlockDefaultHandler(data);
-    } else {
-      newBlockSortedHandler(data);
-    }
   }
 }
 
