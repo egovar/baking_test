@@ -29,6 +29,7 @@ import {
   SCROLL_THRESHOLD,
   DEFAULT_OFFSET,
   SEARCH_IN_OLD_BLOCKS_COUNT,
+  BAKING_TIME,
 } from "./constants";
 import { getSortObject, isHigherInTable } from "./utils";
 import BasicBlocksTable from "@/components/BlocksTable/components/BasicBlocksTable";
@@ -46,6 +47,8 @@ getBlocks()
     if (!(data && Array.isArray(data))) return;
     blocks.value = data;
     topLocalBlock.value = data[0];
+    timeNow.value = Date.now();
+    getSecondsToNextBlock(data[0].timestamp);
     bottomLocalBlock.value = data.slice(-1)[0];
     mainOffset.value += DEFAULT_LIMIT;
   })
@@ -64,28 +67,22 @@ socket.init().then(() => {
 function newBlockHandler({ type, state, data }) {
   if (type === 0) topRemoteBlockLevel.value = state;
   else if (type === 1 && data && Array.isArray(data)) {
-    data.forEach(({ level, timestamp, hash, proposer, reward, fees }) => {
-      let isHigherInMainTable = false;
+    data.forEach((newBlock) => {
+      const { level, timestamp, hash, proposer, reward, fees } = newBlock;
+      const newLightBlock = { level, timestamp, hash, proposer, reward, fees };
       if (
         isHigherInTable({
-          newRow: { level, timestamp, hash, proposer, reward, fees },
+          newRow: newLightBlock,
           bottomRow: bottomLocalBlock.value,
           sortBy: sortBy.value,
           sortDesc: sortDesc.value,
         })
       ) {
         additionalOffset.value++;
-        isHigherInMainTable = true;
       }
       newBlocks.value.push({
-        level,
-        timestamp,
-        hash,
-        proposer,
-        reward,
-        fees,
+        ...newLightBlock,
         new: true,
-        isHigherInMainTable,
       });
     });
   }
@@ -120,21 +117,23 @@ const options = computed({
     );
     mainOffset.value = DEFAULT_OFFSET;
     additionalOffset.value = DEFAULT_OFFSET;
+    scrollableTable.value.scrollTop = 0;
     loading.value = false;
   },
 });
 
 // scroll behaviour
 const table = ref(null);
+const scrollableTable = ref(null);
 onMounted(() => {
-  const scrollableTable = table.value.$el.querySelector(
+  scrollableTable.value = table.value.$el.querySelector(
     ".v-data-table__wrapper"
   );
-  scrollableTable.addEventListener("scroll", () => {
+  scrollableTable.value.addEventListener("scroll", () => {
     if (
-      scrollableTable.scrollHeight -
-        scrollableTable.clientHeight -
-        scrollableTable.scrollTop <=
+      scrollableTable.value.scrollHeight -
+        scrollableTable.value.clientHeight -
+        scrollableTable.value.scrollTop <=
       SCROLL_THRESHOLD
     ) {
       getMoreBlocks();
@@ -163,6 +162,16 @@ onMounted(() => {
     return clearBlocks;
   }
 });
+
+// timer
+const secondsToNextBlock = ref(null);
+const timeNow = ref(null);
+
+function getSecondsToNextBlock(lastBlockISOString) {
+  secondsToNextBlock.value =
+    BAKING_TIME -
+    Math.round((timeNow.value - new Date(lastBlockISOString).getTime()) / 1000);
+}
 </script>
 
 <style scoped lang="scss"></style>
