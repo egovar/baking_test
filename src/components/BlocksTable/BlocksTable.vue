@@ -9,9 +9,30 @@
     hide-default-footer
     fixed-header
     height="calc(100vh - 4rem)"
-    item-key="level"
+    :item-key="LEVEL"
     ref="table"
-  />
+  >
+    <template #[`item.${LEVEL}`]="{ item }">
+      <a :href="`${ROOT_LINK}${item[LEVEL]}`">{{ item[LEVEL] }}</a>
+    </template>
+    <template #[`item.${HASH}`]="{ item }">
+      <a :href="`${ROOT_LINK}${item[HASH]}`">{{ formatHash(item[HASH]) }}</a>
+    </template>
+    <template #[`item.${PROPOSER}`]="{ item }">
+      <v-avatar class="mr-3">
+        <v-img :src="`${AVATAR_ROOT_LINK}${item[PROPOSER].address}`" />
+      </v-avatar>
+      <a :href="`${ROOT_LINK}${item[PROPOSER].address}`">
+        {{ formatProposer(item[PROPOSER].address) }}
+      </a>
+    </template>
+    <template #[`item.${REWARD}`]="{ item }">
+      {{ item[REWARD] / MICRO_DIVIDER }} ꜩ
+    </template>
+    <template #[`item.${FEES}`]="{ item }">
+      {{ item[FEES] / MICRO_DIVIDER }} ꜩ
+    </template>
+  </v-data-table>
 </template>
 
 <script setup>
@@ -29,8 +50,21 @@ import {
   SCROLL_THRESHOLD,
   DEFAULT_OFFSET,
   SEARCH_IN_OLD_BLOCKS_COUNT,
+  LEVEL,
+  HASH,
+  REWARD,
+  FEES,
+  ROOT_LINK,
+  MICRO_DIVIDER,
+  PROPOSER,
+  AVATAR_ROOT_LINK,
 } from "./constants";
-import { getSortObject, isHigherInTable } from "./utils";
+import {
+  getSortObject,
+  isHigherInTable,
+  formatHash,
+  formatProposer,
+} from "./utils";
 
 // getting initial table data, "created"
 const loading = ref(true);
