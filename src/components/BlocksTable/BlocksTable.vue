@@ -25,6 +25,10 @@ import {
   SUBSCRIBE_TO_BLOCKS,
   BLOCKS_EVENT,
   DEFAULT_SORT,
+  DEFAULT_LIMIT,
+  SCROLL_THRESHOLD,
+  DEFAULT_OFFSET,
+  SEARCH_IN_OLD_BLOCKS_COUNT,
 } from "./constants";
 import { getSortObject, isHigherInTable } from "./utils";
 
@@ -35,12 +39,14 @@ const total = 1; // readonly: with -1 sorts offline, with 0 shows no data
 const topLocalBlock = ref({}); // for correct fetching new blocks
 const bottomLocalBlock = ref({});
 const topRemoteBlockLevel = ref(-1);
+const mainOffset = ref(0);
 getBlocks()
   .then((data) => {
     if (!(data && Array.isArray(data))) return;
     blocks.value = data;
     topLocalBlock.value = data[0];
     bottomLocalBlock.value = data.slice(-1)[0];
+    mainOffset.value += DEFAULT_LIMIT;
   })
   .finally(() => (loading.value = false));
 
@@ -56,9 +62,9 @@ socket.init().then(() => {
 
 function newBlockHandler({ type, state, data }) {
   function newBlockDefaultHandler(data) {
-    newBlocks.value = [];
+    const _newBlocks = [];
     data.forEach(({ level, timestamp, hash, proposer, reward, fees }) => {
-      newBlocks.value.push({
+      _newBlocks.push({
         level,
         timestamp,
         hash,
@@ -70,7 +76,7 @@ function newBlockHandler({ type, state, data }) {
       additionalOffset.value++;
     });
     // newBlocks.value.reverse(); // depends on order, got only one in time
-    blocks.value = [...newBlocks.value, ...blocks.value];
+    blocks.value = [..._newBlocks, ...blocks.value];
   }
 
   function newBlockSortedHandler(data) {
@@ -133,11 +139,12 @@ const options = computed({
       sortDesc.value = newSortDesc;
     }
     newBlocks.value = [];
-    additionalOffset.value = 0;
     loading.value = true;
     blocks.value = await getBlocks(
       getSortObject({ sortBy: sortBy.value, sortDesc: sortDesc.value })
     );
+    mainOffset.value = DEFAULT_OFFSET;
+    additionalOffset.value = DEFAULT_OFFSET;
     loading.value = false;
   },
 });
@@ -149,12 +156,37 @@ onMounted(() => {
     ".v-data-table__wrapper"
   );
   scrollableTable.addEventListener("scroll", () => {
-    console.log(
-      scrollableTable.scrollTop,
-      scrollableTable.clientHeight,
-      scrollableTable.scrollHeight
-    );
+    if (
+      scrollableTable.scrollHeight -
+        scrollableTable.clientHeight -
+        scrollableTable.scrollTop <=
+      SCROLL_THRESHOLD
+    ) {
+      getMoreBlocks();
+    }
   });
+
+  async function getMoreBlocks() {
+    if (loading.value) return;
+    loading.value = true;
+    const newBlocks = await getBlocks({
+      ...getSortObject({ sortBy: sortBy.value, sortDesc: sortDesc.value }),
+      offset: mainOffset.value + additionalOffset.value,
+    });
+    const clearBlocks = clearRepeatableBlocks(newBlocks);
+    console.log(clearBlocks.length);
+    mainOffset.value += DEFAULT_LIMIT;
+    blocks.value = [...blocks.value, ...clearBlocks];
+    loading.value = false;
+  }
+
+  function clearRepeatableBlocks(newBlocks) {
+    const blocksForSearch = blocks.value.slice(SEARCH_IN_OLD_BLOCKS_COUNT);
+    const clearBlocks = newBlocks.filter((newBlock) => {
+      return !blocksForSearch.some(({ level }) => level === newBlock.level);
+    });
+    return clearBlocks;
+  }
 });
 </script>
 
