@@ -1,5 +1,5 @@
 <template>
-  <v-app>
+  <v-app class="app">
     <v-app-bar app color="primary" dark></v-app-bar>
     <v-main>
       <BlocksTable />
@@ -9,6 +9,6 @@
 
 <script setup>
 import BlocksTable from "@/components/BlocksTable/BlocksTable";
-
-console.log("ahaha");
 </script>
+
+<style scoped lang="scss"></style>

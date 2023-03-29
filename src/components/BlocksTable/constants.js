@@ -20,10 +20,10 @@ export const DEFAULT_PARAMS = {
   },
   limit: DEFAULT_LIMIT,
   offset: DEFAULT_OFFSET,
-  level: {
-    gt: 194965,
-    le: 194967,
-  },
+  // level: {
+  //   gt: 194965,
+  //   le: 194967,
+  // },
 };
 export const DEFAULT_SORT_OBJECT = getSortObject();
 export const BAKING_TIME = 8;
