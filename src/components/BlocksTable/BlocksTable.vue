@@ -10,11 +10,12 @@
     fixed-header
     height="calc(100vh - 4rem)"
     item-key="level"
+    ref="table"
   />
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { socket } from "@/api";
 import { getBlocks } from "./api";
@@ -71,17 +72,10 @@ function newBlockHandler({ type, state, data }) {
     // newBlocks.value.reverse(); // depends on order, got only one in time
     blocks.value = [...newBlocks.value, ...blocks.value];
   }
+
   function newBlockSortedHandler(data) {
     data.forEach(({ level, timestamp, hash, proposer, reward, fees }) => {
-      newBlocks.value.push({
-        level,
-        timestamp,
-        hash,
-        proposer,
-        reward,
-        fees,
-        new: true,
-      });
+      let isHigherInMainTable = false;
       if (
         isHigherInTable({
           newRow: { level, timestamp, hash, proposer, reward, fees },
@@ -91,9 +85,21 @@ function newBlockHandler({ type, state, data }) {
         })
       ) {
         additionalOffset.value++;
+        isHigherInMainTable = true;
       }
+      newBlocks.value.push({
+        level,
+        timestamp,
+        hash,
+        proposer,
+        reward,
+        fees,
+        new: true,
+        isHigherInMainTable,
+      });
     });
   }
+
   if (type === 0) topRemoteBlockLevel.value = state;
   else if (type === 1 && data && Array.isArray(data)) {
     if (sortBy.value === DEFAULT_SORT && sortDesc.value === DEFAULT_SORT_DESC) {
@@ -134,6 +140,21 @@ const options = computed({
     );
     loading.value = false;
   },
+});
+
+// scroll behaviour
+const table = ref(null);
+onMounted(() => {
+  const scrollableTable = table.value.$el.querySelector(
+    ".v-data-table__wrapper"
+  );
+  scrollableTable.addEventListener("scroll", () => {
+    console.log(
+      scrollableTable.scrollTop,
+      scrollableTable.clientHeight,
+      scrollableTable.scrollHeight
+    );
+  });
 });
 </script>
 
