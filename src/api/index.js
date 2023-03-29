@@ -8,7 +8,7 @@ export const server = {
   _transformToQuery: (params) => {
     //gets object, returns string
     if (params && typeof params === "object") {
-      return `?${qs.stringify(params)}`;
+      return `?${qs.stringify(params, { allowDots: true })}`;
     }
     return "";
   },

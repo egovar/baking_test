@@ -55,17 +55,18 @@ const options = computed({
   set: async ({ sortBy: _newSortBy, sortDesc: _newSortDesc }) => {
     const newSortBy = _newSortBy[0];
     const newSortDesc = _newSortDesc[0];
+    if (newSortBy === sortBy.value && newSortDesc === sortDesc.value) return;
     if (newSortBy !== sortBy.value) {
       sortBy.value = newSortBy;
       sortDesc.value = DEFAULT_SORT_DESC;
     } else {
       sortDesc.value = newSortDesc;
-      loading.value = true;
-      blocks.value = await getBlocks(
-        getSortObject({ sortBy: sortBy.value, sortDesc: sortDesc.value })
-      );
-      loading.value = false;
     }
+    loading.value = true;
+    blocks.value = await getBlocks(
+      getSortObject({ sortBy: sortBy.value, sortDesc: sortDesc.value })
+    );
+    loading.value = false;
   },
 });
 </script>

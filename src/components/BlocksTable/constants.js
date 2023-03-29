@@ -14,11 +14,16 @@ export const DEFAULT_LIMIT = 40;
 export const DEFAULT_OFFSET = 0;
 export const DEFAULT_SORT = LEVEL;
 export const DEFAULT_SORT_DESC = true;
-export const SORT_FIELDS = { desc: "sort.desc", asc: "sort" };
 export const DEFAULT_PARAMS = {
-  "select.fields": DEFAULT_SELECT,
+  select: {
+    fields: DEFAULT_SELECT,
+  },
   limit: DEFAULT_LIMIT,
   offset: DEFAULT_OFFSET,
+  level: {
+    gt: 194965,
+    le: 194967,
+  },
 };
 export const DEFAULT_SORT_OBJECT = getSortObject();
 export const BAKING_TIME = 8;
