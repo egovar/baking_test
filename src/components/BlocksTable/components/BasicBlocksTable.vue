@@ -6,6 +6,7 @@
     :options.sync="$attrs.options"
     :disable-sort="$attrs['disable-sort']"
     :server-items-length="$attrs['server-items-length']"
+    :item-class="$attrs['item-class']"
     hide-default-footer
     fixed-header
     :height="$attrs.height"

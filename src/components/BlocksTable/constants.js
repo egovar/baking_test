@@ -43,3 +43,4 @@ export const SUBSCRIBE_TO_BLOCKS = "SubscribeToBlocks";
 export const BLOCKS_EVENT = "blocks";
 export const SCROLL_THRESHOLD = 100;
 export const SEARCH_IN_OLD_BLOCKS_COUNT = -DEFAULT_LIMIT;
+export const NEW_BLOCK_HIGHLIGHT_TIME = BAKING_TIME + 2;

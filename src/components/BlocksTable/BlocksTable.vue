@@ -1,18 +1,19 @@
 <template>
-  <v-row>
-    <v-container>
-      <BasicBlocksTable
-        :items="blocks"
-        :loading="loading"
-        :options="options"
-        :disable-sort="loading"
-        :server-items-length="total"
-        height="calc(100vh - 4rem)"
-        ref="table"
-        @update:options="options = $event"
-      />
-    </v-container>
-  </v-row>
+  <v-container class="table__container">
+    <BasicBlocksTable
+      :items="blocks"
+      :loading="loading"
+      :options="options"
+      :disable-sort="loading"
+      :server-items-length="total"
+      :item-class="getBlockRowClass"
+      height="calc(100vh - 4rem)"
+      ref="table"
+      class="table"
+      @update:options="options = $event"
+    />
+    <NewBlocksDrawer :new-blocks="newBlocks" class="table__new-blocks-table" />
+  </v-container>
 </template>
 
 <script setup>
@@ -30,9 +31,16 @@ import {
   DEFAULT_OFFSET,
   SEARCH_IN_OLD_BLOCKS_COUNT,
   BAKING_TIME,
+  NEW_BLOCK_HIGHLIGHT_TIME,
 } from "./constants";
-import { getSortObject, isHigherInTable } from "./utils";
+import {
+  getSortObject,
+  isHigherInTable,
+  getLightBlock,
+  binarySearchNewBlockIndex,
+} from "./utils";
 import BasicBlocksTable from "@/components/BlocksTable/components/BasicBlocksTable";
+import NewBlocksDrawer from "@/components/BlocksTable/components/NewBlocksDrawer";
 
 // getting initial table data, "created"
 const loading = ref(true);
@@ -47,14 +55,13 @@ getBlocks()
     if (!(data && Array.isArray(data))) return;
     blocks.value = data;
     topLocalBlock.value = data[0];
-    timeNow.value = Date.now();
-    getSecondsToNextBlock(data[0].timestamp);
+    setSecondsToNextBlock(data[0].timestamp);
     bottomLocalBlock.value = data.slice(-1)[0];
     mainOffset.value += DEFAULT_LIMIT;
   })
   .finally(() => (loading.value = false));
 
-// subscribing to socket, setting blocks refresh
+// subscribing to socket, setting new blocks
 const newBlocks = ref([]);
 const additionalOffset = ref(0);
 socket.init().then(() => {
@@ -67,24 +74,71 @@ socket.init().then(() => {
 function newBlockHandler({ type, state, data }) {
   if (type === 0) topRemoteBlockLevel.value = state;
   else if (type === 1 && data && Array.isArray(data)) {
+    if (blocks.value.length < DEFAULT_LIMIT * 2.5) {
+      newBlockInsertHandler(data);
+    } else {
+      newBlockDefaultHandler(data);
+    }
+    secondsToNextBlock.value = BAKING_TIME;
+  }
+
+  function newBlockInsertHandler(data) {
     data.forEach((newBlock) => {
-      const { level, timestamp, hash, proposer, reward, fees } = newBlock;
-      const newLightBlock = { level, timestamp, hash, proposer, reward, fees };
+      const newLightBlock = getLightBlock(newBlock);
+      const newBlockIndex = binarySearchNewBlockIndex({
+        newRow: newLightBlock,
+        allBlocks: blocks.value,
+        sortBy: sortBy.value,
+        sortDesc: sortDesc.value,
+      });
+      if (newBlockIndex === -1) return;
+      additionalOffset.value++;
+      newLightBlock.new = true;
+      blocks.value = [
+        ...blocks.value.slice(0, newBlockIndex),
+        newLightBlock,
+        ...blocks.value.slice(newBlockIndex),
+      ];
+    });
+  }
+
+  function newBlockDefaultHandler(data) {
+    data.forEach((newBlock) => {
+      const newLightBlock = getLightBlock(newBlock);
+      let isHigherInMainTable = false;
       if (
         isHigherInTable({
           newRow: newLightBlock,
-          bottomRow: bottomLocalBlock.value,
+          comparisonRow: bottomLocalBlock.value,
           sortBy: sortBy.value,
           sortDesc: sortDesc.value,
         })
       ) {
         additionalOffset.value++;
+        isHigherInMainTable = true;
       }
       newBlocks.value.push({
         ...newLightBlock,
         new: true,
+        isHigherInMainTable,
       });
     });
+  }
+}
+
+// setting new blocks style
+
+function getBlockRowClass(row) {
+  if (row.new) {
+    setNewBlockRowTimer(row);
+    return "green lighten-4 table__row";
+  }
+  return "table__row";
+
+  function setNewBlockRowTimer(row) {
+    setTimeout(() => {
+      row.new = false;
+    }, NEW_BLOCK_HIGHLIGHT_TIME * 1000);
   }
 }
 
@@ -115,8 +169,9 @@ const options = computed({
     blocks.value = await getBlocks(
       getSortObject({ sortBy: sortBy.value, sortDesc: sortDesc.value })
     );
+    setSecondsToNextBlock(blocks.value[0].timestamp);
     mainOffset.value = DEFAULT_OFFSET;
-    additionalOffset.value = DEFAULT_OFFSET;
+    additionalOffset.value = 0;
     scrollableTable.value.scrollTop = 0;
     loading.value = false;
   },
@@ -148,7 +203,6 @@ onMounted(() => {
       offset: mainOffset.value + additionalOffset.value,
     });
     const clearBlocks = clearRepeatableBlocks(newBlocks);
-    console.log(clearBlocks.length);
     mainOffset.value += DEFAULT_LIMIT;
     blocks.value = [...blocks.value, ...clearBlocks];
     loading.value = false;
@@ -165,13 +219,35 @@ onMounted(() => {
 
 // timer
 const secondsToNextBlock = ref(null);
-const timeNow = ref(null);
+// const progressToNextBlock = ref(100); // 100 - 0
+// const timeoutToNextBlock = ref(null);
 
-function getSecondsToNextBlock(lastBlockISOString) {
+function setSecondsToNextBlock(lastBlockISOString) {
   secondsToNextBlock.value =
     BAKING_TIME -
-    Math.round((timeNow.value - new Date(lastBlockISOString).getTime()) / 1000);
+    Math.round((Date.now() - new Date(lastBlockISOString).getTime()) / 1000);
 }
+
+// function setTimeoutToNextBlock(seconds) {
+//   progressToNextBlock.value = (100 * secondsToNextBlock.value) / BAKING_TIME;
+//   timeoutToNextBlock.value = setTimeout(() => {});
+// }
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.table {
+  &:deep(.table__row) {
+    transition: all 0.5s ease;
+  }
+
+  &__container {
+    position: relative;
+  }
+
+  &__new-blocks-table {
+    position: absolute;
+    right: -2rem;
+    bottom: 5rem;
+  }
+}
+</style>
