@@ -36,7 +36,6 @@ import {
   DEFAULT_SORT,
   DEFAULT_LIMIT,
   SCROLL_THRESHOLD,
-  DEFAULT_OFFSET,
   SEARCH_IN_OLD_BLOCKS_COUNT,
   BAKING_TIME,
   NEW_BLOCK_HIGHLIGHT_TIME,
@@ -200,7 +199,7 @@ const options = computed({
       getSortObject({ sortBy: sortBy.value, sortDesc: sortDesc.value })
     );
     setSecondsToNextBlock(BAKING_TIME);
-    mainOffset.value = DEFAULT_OFFSET;
+    mainOffset.value = DEFAULT_LIMIT;
     additionalOffset.value = 0;
     scrollableTable.value.scrollTop = 0;
     loading.value = false;
