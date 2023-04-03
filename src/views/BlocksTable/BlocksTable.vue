@@ -100,7 +100,10 @@ function newBlockHandler({ type, state, data }, fromSocket = true) {
         sortBy: sortBy.value,
         sortDesc: sortDesc.value,
       });
-      if (newBlockIndex === -1) return;
+      if (newBlockIndex === -1) {
+        newBlocks.value.push(newLightBlock);
+        return;
+      }
       additionalOffset.value++;
       newLightBlock.new = true;
       blocks.value = [
