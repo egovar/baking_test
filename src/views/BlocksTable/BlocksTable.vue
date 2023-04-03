@@ -199,7 +199,7 @@ const options = computed({
     blocks.value = await getBlocks(
       getSortObject({ sortBy: sortBy.value, sortDesc: sortDesc.value })
     );
-    setSecondsToNextBlock(getSecondsToNextBlock(blocks.value[0].timestamp));
+    setSecondsToNextBlock(BAKING_TIME);
     mainOffset.value = DEFAULT_OFFSET;
     additionalOffset.value = 0;
     scrollableTable.value.scrollTop = 0;
