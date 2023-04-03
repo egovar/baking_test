@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-container class="table__container">
+    <v-container class="table__container py-0">
       <BasicBlocksTable
         :items="blocks"
         :loading="loading"

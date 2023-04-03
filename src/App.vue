@@ -1,6 +1,6 @@
 <template>
   <v-app class="app">
-    <v-app-bar app color="primary" clipped-right dark>
+    <v-app-bar app color="primary" clipped-right>
       <NewBlockTimer
         ref="timer"
         :new-blocks-count="newBlocks.length"

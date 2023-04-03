@@ -1,9 +1,27 @@
 <template>
-  <div style="background: black" @click="onClickTimer">
-    {{ newBlockText }} {{ secondsLeft }}
-    <v-progress-linear :value="percentLeft" />
-    <p v-if="newBlocksCount > 0">Open new blocks ({{ newBlocksCount }})</p>
-  </div>
+  <v-container class="py-0">
+    <v-row dense>
+      <v-spacer />
+      <v-card class="col-2" @click="onClickTimer">
+        <v-card-text class="d-flex pa-1 justify-space-between align-center">
+          <div class="timer__text">
+            <p class="ma-0">{{ newBlockText }} {{ secondsLeft }}s</p>
+            <p
+              class="ma-0 text-decoration-underline font-weight-light caption"
+              v-if="newBlocksCount > 0"
+            >
+              Open new blocks ({{ newBlocksCount }})
+            </p>
+          </div>
+          <v-progress-circular
+            :value="percentLeft"
+            color="primary"
+            class="timer__progress-circle"
+          />
+        </v-card-text>
+      </v-card>
+    </v-row>
+  </v-container>
 </template>
 
 <script setup>
@@ -18,7 +36,7 @@ const props = defineProps({
 });
 
 function onClickTimer() {
-  if (props.newBlocksCount.value > 0 || 1 > 0) emit("open:new-blocks-table");
+  if (props.newBlocksCount > 0) emit("open:new-blocks-table");
 }
 
 const emit = defineEmits(["open:new-blocks-table"]);
@@ -52,4 +70,16 @@ const newBlockText = computed(() => {
 });
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.timer {
+  &__progress-circle {
+    &:deep(.v-progress-circular__overlay) {
+      transition: all 0.1s linear;
+    }
+  }
+
+  &__text {
+    width: 200px;
+  }
+}
+</style>
