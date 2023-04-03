@@ -6,7 +6,7 @@
         :loading="loading"
         :options="options"
         :disable-sort="loading"
-        :server-items-length="total"
+        :server-items-length="1"
         :item-class="getBlockRowClass"
         height="calc(100vh - 4rem)"
         ref="table"
@@ -18,7 +18,14 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, defineEmits, defineExpose } from "vue";
+import {
+  computed,
+  onMounted,
+  ref,
+  defineEmits,
+  defineExpose,
+  watch,
+} from "vue";
 
 import { socket, getBlocks } from "@/api";
 
@@ -34,28 +41,29 @@ import {
   BAKING_TIME,
   NEW_BLOCK_HIGHLIGHT_TIME,
   MILLI_DIVIDER,
+  LEVEL,
+  DEFAULT_SORT_OBJECT,
 } from "@/constants";
+
 import {
   getSortObject,
   isHigherInTable,
   getLightBlock,
   binarySearchNewBlockIndex,
 } from "@/utils";
+
 import BasicBlocksTable from "./components/BasicBlocksTable";
 
 // getting initial table data, "created"
 const loading = ref(true);
 const blocks = ref([]);
-const total = 1; // readonly: with -1 sorts offline, with 0 shows no data
-const topLocalBlock = ref({}); // for correct fetching new blocks
 const bottomLocalBlock = ref({});
-const topRemoteBlockLevel = ref(-1);
 const mainOffset = ref(0);
 getBlocks()
   .then((data) => {
     if (!(data && Array.isArray(data))) return;
     blocks.value = data;
-    topLocalBlock.value = data[0];
+    topLocalBlockLevel.value = data[0][LEVEL];
     setSecondsToNextBlock(getSecondsToNextBlock(data[0].timestamp));
     bottomLocalBlock.value = data.slice(-1)[0];
     mainOffset.value += DEFAULT_LIMIT;
@@ -73,7 +81,7 @@ socket.init().then(() => {
   });
 });
 
-function newBlockHandler({ type, state, data }) {
+function newBlockHandler({ type, state, data }, fromSocket = true) {
   if (type === 0) topRemoteBlockLevel.value = state;
   else if (type === 1 && data && Array.isArray(data)) {
     if (blocks.value.length < DEFAULT_LIMIT * 2.5) {
@@ -81,7 +89,7 @@ function newBlockHandler({ type, state, data }) {
     } else {
       newBlockDefaultHandler(data);
     }
-    setSecondsToNextBlock(BAKING_TIME);
+    if (fromSocket) setSecondsToNextBlock(BAKING_TIME);
   }
 
   function newBlockInsertHandler(data) {
@@ -107,7 +115,6 @@ function newBlockHandler({ type, state, data }) {
   function newBlockDefaultHandler(data) {
     data.forEach((newBlock) => {
       const newLightBlock = getLightBlock(newBlock);
-      let isHigherInMainTable = false;
       if (
         isHigherInTable({
           newRow: newLightBlock,
@@ -117,12 +124,10 @@ function newBlockHandler({ type, state, data }) {
         })
       ) {
         additionalOffset.value++;
-        isHigherInMainTable = true;
       }
       newBlocks.value.push({
         ...newLightBlock,
         new: true,
-        isHigherInMainTable,
       });
     });
   }
@@ -143,6 +148,29 @@ function getBlockRowClass(row) {
     }, NEW_BLOCK_HIGHLIGHT_TIME * MILLI_DIVIDER);
   }
 }
+
+// getting lost blocks (slow internet connection);
+const topLocalBlockLevel = ref(null); // for correct fetching new blocks
+const topRemoteBlockLevel = ref(null);
+const lostFetched = ref(false);
+
+watch(
+  [topLocalBlockLevel, topRemoteBlockLevel],
+  async ([newLocalVal, newRemoteVal]) => {
+    if (lostFetched.value || !(newLocalVal && newRemoteVal)) return;
+    if (newRemoteVal > newLocalVal) {
+      lostFetched.value = true;
+      const lostBlocks = await getBlocks({
+        ...DEFAULT_SORT_OBJECT,
+        level: {
+          gt: newLocalVal,
+          le: newRemoteVal,
+        },
+      });
+      newBlockHandler({ type: 1, data: lostBlocks }, false);
+    }
+  }
+);
 
 // setting sorting logic
 const sortBy = ref(DEFAULT_SORT);
@@ -205,6 +233,7 @@ onMounted(() => {
       offset: mainOffset.value + additionalOffset.value,
     });
     const clearBlocks = clearRepeatableBlocks(newBlocks);
+    bottomLocalBlock.value = clearBlocks.slice(-1)[0];
     mainOffset.value += DEFAULT_LIMIT;
     blocks.value = [...blocks.value, ...clearBlocks];
     loading.value = false;
@@ -220,8 +249,6 @@ onMounted(() => {
 });
 
 // timer
-// const progressToNextBlock = ref(100); // 100 - 0
-// const timeoutToNextBlock = ref(null);
 const emit = defineEmits(["update:timer"]);
 
 function setSecondsToNextBlock(seconds) {
@@ -234,27 +261,12 @@ function getSecondsToNextBlock(timestamp) {
     Math.round((Date.now() - new Date(timestamp).getTime()) / MILLI_DIVIDER)
   );
 }
-
-// function setTimeoutToNextBlock(seconds) {
-//   progressToNextBlock.value = (100 * secondsToNextBlock.value) / BAKING_TIME;
-//   timeoutToNextBlock.value = setTimeout(() => {});
-// }
 </script>
 
 <style scoped lang="scss">
 .table {
   &:deep(.table__row) {
     transition: all 0.5s ease;
-  }
-
-  &__container {
-    position: relative;
-  }
-
-  &__new-blocks-table {
-    position: absolute;
-    right: -2rem;
-    bottom: 5rem;
   }
 }
 </style>
