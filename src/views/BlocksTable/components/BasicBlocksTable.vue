@@ -11,7 +11,7 @@
     fixed-header
     :height="$attrs.height"
     :item-key="LEVEL"
-    @update:options="$emit('update:options', $event)"
+    @update:options="emit('update:options', $event)"
   >
     <template #[`item.${LEVEL}`]="{ item }">
       <a :href="`${ROOT_LINK}${item[LEVEL]}`">{{ item[LEVEL] }}</a>
@@ -52,7 +52,7 @@ import {
 } from "@/constants";
 import { formatHash, formatProposer } from "@/utils";
 import { defineEmits } from "vue";
-defineEmits(["update:options"]);
+const emit = defineEmits(["update:options"]);
 </script>
 
 <style scoped lang="scss"></style>

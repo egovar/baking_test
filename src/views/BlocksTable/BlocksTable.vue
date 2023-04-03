@@ -1,23 +1,24 @@
 <template>
-  <v-container class="table__container">
-    <BasicBlocksTable
-      :items="blocks"
-      :loading="loading"
-      :options="options"
-      :disable-sort="loading"
-      :server-items-length="total"
-      :item-class="getBlockRowClass"
-      height="calc(100vh - 4rem)"
-      ref="table"
-      class="table"
-      @update:options="options = $event"
-    />
-    <NewBlocksDrawer :new-blocks="newBlocks" class="table__new-blocks-table" />
-  </v-container>
+  <div>
+    <v-container class="table__container">
+      <BasicBlocksTable
+        :items="blocks"
+        :loading="loading"
+        :options="options"
+        :disable-sort="loading"
+        :server-items-length="total"
+        :item-class="getBlockRowClass"
+        height="calc(100vh - 4rem)"
+        ref="table"
+        class="table"
+        @update:options="options = $event"
+      />
+    </v-container>
+  </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, defineEmits, defineExpose } from "vue";
 
 import { socket, getBlocks } from "@/api";
 
@@ -41,7 +42,6 @@ import {
   binarySearchNewBlockIndex,
 } from "@/utils";
 import BasicBlocksTable from "./components/BasicBlocksTable";
-import NewBlocksDrawer from "./components/NewBlocksDrawer";
 
 // getting initial table data, "created"
 const loading = ref(true);
@@ -56,7 +56,7 @@ getBlocks()
     if (!(data && Array.isArray(data))) return;
     blocks.value = data;
     topLocalBlock.value = data[0];
-    setSecondsToNextBlock(data[0].timestamp);
+    setSecondsToNextBlock(getSecondsToNextBlock(data[0].timestamp));
     bottomLocalBlock.value = data.slice(-1)[0];
     mainOffset.value += DEFAULT_LIMIT;
   })
@@ -64,6 +64,7 @@ getBlocks()
 
 // subscribing to socket, setting new blocks
 const newBlocks = ref([]);
+defineExpose({ newBlocks });
 const additionalOffset = ref(0);
 socket.init().then(() => {
   socket.send(SUBSCRIBE_TO_BLOCKS);
@@ -80,7 +81,7 @@ function newBlockHandler({ type, state, data }) {
     } else {
       newBlockDefaultHandler(data);
     }
-    secondsToNextBlock.value = BAKING_TIME;
+    setSecondsToNextBlock(BAKING_TIME);
   }
 
   function newBlockInsertHandler(data) {
@@ -170,7 +171,7 @@ const options = computed({
     blocks.value = await getBlocks(
       getSortObject({ sortBy: sortBy.value, sortDesc: sortDesc.value })
     );
-    setSecondsToNextBlock(blocks.value[0].timestamp);
+    setSecondsToNextBlock(getSecondsToNextBlock(blocks.value[0].timestamp));
     mainOffset.value = DEFAULT_OFFSET;
     additionalOffset.value = 0;
     scrollableTable.value.scrollTop = 0;
@@ -219,16 +220,19 @@ onMounted(() => {
 });
 
 // timer
-const secondsToNextBlock = ref(null);
 // const progressToNextBlock = ref(100); // 100 - 0
 // const timeoutToNextBlock = ref(null);
+const emit = defineEmits(["update:timer"]);
 
-function setSecondsToNextBlock(lastBlockISOString) {
-  secondsToNextBlock.value =
+function setSecondsToNextBlock(seconds) {
+  emit("update:timer", seconds);
+}
+
+function getSecondsToNextBlock(timestamp) {
+  return (
     BAKING_TIME -
-    Math.round(
-      (Date.now() - new Date(lastBlockISOString).getTime()) / MILLI_DIVIDER
-    );
+    Math.round((Date.now() - new Date(timestamp).getTime()) / MILLI_DIVIDER)
+  );
 }
 
 // function setTimeoutToNextBlock(seconds) {

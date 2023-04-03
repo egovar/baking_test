@@ -1,19 +1,38 @@
 <template>
-  <div>{{ newBlockText }} {{ percentLeft }}</div>
+  <div style="background: black" @click="onClickTimer">
+    {{ newBlockText }} {{ secondsLeft }}
+    <v-progress-linear :value="percentLeft" />
+    <p v-if="newBlocksCount > 0">Open new blocks ({{ newBlocksCount }})</p>
+  </div>
 </template>
 
 <script setup>
 import { BAKING_TIME, MILLI_DIVIDER, TIMER_PRECISION } from "@/constants";
-import { ref, computed, defineExpose } from "vue";
+import { ref, computed, defineExpose, defineProps, defineEmits } from "vue";
+
+const props = defineProps({
+  newBlocksCount: {
+    type: Number,
+    default: 0,
+  },
+});
+
+function onClickTimer() {
+  if (props.newBlocksCount.value > 0 || 1 > 0) emit("open:new-blocks-table");
+}
+
+const emit = defineEmits(["open:new-blocks-table"]);
 
 defineExpose({ setTimer });
 
 function setTimer(seconds) {
+  clearInterval(interval.value);
   milliSecondsLeft.value = seconds * MILLI_DIVIDER;
   interval.value = setInterval(() => {
     milliSecondsLeft.value -= delta;
   }, delta);
 }
+
 const milliSecondsLeft = ref(null);
 const interval = ref(null);
 const delta = (BAKING_TIME * MILLI_DIVIDER) / TIMER_PRECISION;
@@ -28,7 +47,7 @@ const percentLeft = computed(() => {
   return 0;
 });
 const newBlockText = computed(() => {
-  if (secondsLeft.value >= 0) return "New block in";
+  if (milliSecondsLeft.value >= -1 * MILLI_DIVIDER) return "New block in";
   return "New block is late for";
 });
 </script>
