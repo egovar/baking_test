@@ -19,8 +19,8 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 
-import { socket } from "@/api";
-import { getBlocks } from "./api";
+import { socket, getBlocks } from "@/api";
+
 import {
   DEFAULT_SORT_DESC,
   SUBSCRIBE_TO_BLOCKS,
@@ -32,15 +32,16 @@ import {
   SEARCH_IN_OLD_BLOCKS_COUNT,
   BAKING_TIME,
   NEW_BLOCK_HIGHLIGHT_TIME,
-} from "./constants";
+  MILLI_DIVIDER,
+} from "@/constants";
 import {
   getSortObject,
   isHigherInTable,
   getLightBlock,
   binarySearchNewBlockIndex,
-} from "./utils";
-import BasicBlocksTable from "@/components/BlocksTable/components/BasicBlocksTable";
-import NewBlocksDrawer from "@/components/BlocksTable/components/NewBlocksDrawer";
+} from "@/utils";
+import BasicBlocksTable from "./components/BasicBlocksTable";
+import NewBlocksDrawer from "./components/NewBlocksDrawer";
 
 // getting initial table data, "created"
 const loading = ref(true);
@@ -138,7 +139,7 @@ function getBlockRowClass(row) {
   function setNewBlockRowTimer(row) {
     setTimeout(() => {
       row.new = false;
-    }, NEW_BLOCK_HIGHLIGHT_TIME * 1000);
+    }, NEW_BLOCK_HIGHLIGHT_TIME * MILLI_DIVIDER);
   }
 }
 
@@ -225,7 +226,9 @@ const secondsToNextBlock = ref(null);
 function setSecondsToNextBlock(lastBlockISOString) {
   secondsToNextBlock.value =
     BAKING_TIME -
-    Math.round((Date.now() - new Date(lastBlockISOString).getTime()) / 1000);
+    Math.round(
+      (Date.now() - new Date(lastBlockISOString).getTime()) / MILLI_DIVIDER
+    );
 }
 
 // function setTimeoutToNextBlock(seconds) {

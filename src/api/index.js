@@ -1,7 +1,7 @@
 import qs from "qs";
 
 export { socket } from "./socket";
-
+export * from "./blocksTable";
 const ROOT = "https://api.mumbainet.tzkt.io";
 
 export const server = {

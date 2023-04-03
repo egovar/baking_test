@@ -8,7 +8,7 @@
 </template>
 
 <script setup>
-import BlocksTable from "@/components/BlocksTable/BlocksTable";
+import BlocksTable from "@/views/BlocksTable/BlocksTable";
 </script>
 
 <style scoped lang="scss">

@@ -5,7 +5,7 @@ import {
   BLOCK_HASH_LENGTH,
   PROPOSER_START_LENGTH,
   PROPOSER_END_LENGTH,
-} from "./constants";
+} from "@/constants";
 
 export function getSortObject(
   { sortBy, sortDesc } = { sortBy: DEFAULT_SORT, sortDesc: DEFAULT_SORT_DESC }

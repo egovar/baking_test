@@ -1,9 +1,11 @@
-import { getSortObject } from "./utils";
+import { getSortObject } from "@/utils";
 
 export const ROOT_LINK = "https://mumbainet.tzkt.io/";
 export const AVATAR_ROOT_LINK = "https://services.tzkt.io/v1/avatars/";
 export const BLOCK_HASH_LENGTH = 10;
 export const MICRO_DIVIDER = 1000000;
+export const MILLI_DIVIDER = 1000;
+export const TIMER_PRECISION = 100; // 100 - 1 percent per iteration, 1000 - 0.1 percent per iteration
 export const PROPOSER_START_LENGTH = 8;
 export const PROPOSER_END_LENGTH = 5;
 export const [LEVEL, TIMESTAMP, HASH, PROPOSER, REWARD, FEES] = [

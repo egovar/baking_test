@@ -49,8 +49,8 @@ import {
   MICRO_DIVIDER,
   PROPOSER,
   AVATAR_ROOT_LINK,
-} from "../constants";
-import { formatHash, formatProposer } from "../utils";
+} from "@/constants";
+import { formatHash, formatProposer } from "@/utils";
 import { defineEmits } from "vue";
 defineEmits(["update:options"]);
 </script>
